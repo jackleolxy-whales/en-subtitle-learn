@@ -43,15 +43,22 @@ def _save_episodes(episodes: list[dict]):
     EPISODES_FILE.write_text(json.dumps(episodes, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+CACHE_VERSION = "v2_pm"
+
 def _cache_key(prefix: str, *parts: str) -> str:
-    raw = f"{prefix}:" + ":".join(parts)
+    raw = f"{prefix}:{CACHE_VERSION}:" + ":".join(parts)
     return hashlib.md5(raw.encode()).hexdigest()
 
 
 def _get_cached(cache_key: str) -> Optional[dict]:
     path = CACHE_DIR / f"{cache_key}.json"
     if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data and "sentences" in data:
+            first = data["sentences"][0] if data["sentences"] else {}
+            if "pm_meeting" not in first:
+                return None
+        return data
     return None
 
 
@@ -76,6 +83,41 @@ class YouTubeImportRequest(BaseModel):
     generate_translation: bool = True
     generate_expressions: bool = True
     model_size: str = "base"
+
+
+def _migrate_episodes_pm():
+    """Backfill PM fields for episodes imported before PM upgrade."""
+    episodes = _load_episodes()
+    changed = False
+    for ep in episodes:
+        sents = ep.get("sentences", [])
+        if not sents:
+            continue
+        if "pm_meeting" in sents[0]:
+            continue
+        print(f"[Migrate] Backfilling PM fields for episode: {ep.get('title', ep.get('episode_id'))}")
+        changed = True
+        for s in sents:
+            expr = process_sentence_expressions(s.get("english", ""))
+            s["pm_meeting"] = expr["pm_meeting"]
+            s["pm_slack"] = expr["pm_slack"]
+            s["pm_doc"] = expr["pm_doc"]
+            s["intent_tag"] = expr["intent_tag"]
+            s["scenario_tags"] = expr["scenario_tags"]
+            s["transferability"] = expr["transferability"]
+            s.pop("rewrite_casual", None)
+            s.pop("rewrite_formal", None)
+            s.pop("rewrite_short", None)
+        ep["pm_pack"] = generate_pm_pack(sents)
+        ep["pm_phrase_count"] = ep["pm_pack"]["total_transferable"]
+    if changed:
+        _save_episodes(episodes)
+        print("[Migrate] Episode PM backfill complete.")
+
+
+@app.on_event("startup")
+def startup():
+    _migrate_episodes_pm()
 
 
 # --- Endpoints ---
