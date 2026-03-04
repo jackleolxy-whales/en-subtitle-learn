@@ -1,15 +1,18 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { episodes as sampleEpisodes } from '../data/episodes';
 import { useLearningProgress } from '../store/useStore';
 import { useEpisodes } from '../store/useEpisodes';
+import { usePhraseCards } from '../store/usePhraseCards';
 import { transcribeVideo } from '../api';
-import type { PlaybackRate, Sentence, Episode } from '../types';
+import type { PlaybackRate, Sentence, Episode, PMPack } from '../types';
 import { VideoPlayer } from '../components/VideoPlayer';
 import type { VideoPlayerHandle } from '../components/VideoPlayer';
 import { LearningControls } from '../components/LearningControls';
 import { SubtitlePanel } from '../components/SubtitlePanel';
-import { ArrowLeft, CheckCircle2, Loader2, Youtube, Subtitles, Cpu } from 'lucide-react';
+import { PMRecap } from '../components/PMRecap';
+import { PMPackPanel } from '../components/PMPackPanel';
+import { ArrowLeft, CheckCircle2, Loader2, Youtube, Subtitles, Cpu, Briefcase } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -17,6 +20,7 @@ export function LearningPage() {
   const { episodeId } = useParams<{ episodeId: string }>();
   const navigate = useNavigate();
   const { allEpisodes } = useEpisodes();
+  const { addCard, isCardSaved } = usePhraseCards();
 
   const episode: Episode | undefined =
     allEpisodes.find((e) => e.episode_id === Number(episodeId)) ||
@@ -27,8 +31,10 @@ export function LearningPage() {
   const playerRef = useRef<VideoPlayerHandle>(null);
 
   const [sentences, setSentences] = useState<Sentence[]>([]);
+  const [pmPack, setPmPack] = useState<PMPack | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pmPackOpen, setPmPackOpen] = useState(false);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -54,9 +60,15 @@ export function LearningPage() {
           });
           if (!res.ok) throw new Error('Failed to fetch subtitles');
           const data = await res.json();
-          if (!cancelled) setSentences(data.sentences || []);
+          if (!cancelled) {
+            setSentences(data.sentences || []);
+            setPmPack(data.pm_pack || null);
+          }
         } else if (episode!.sentences && episode!.sentences.length > 0) {
-          if (!cancelled) setSentences(episode!.sentences);
+          if (!cancelled) {
+            setSentences(episode!.sentences);
+            setPmPack(episode!.pm_pack || null);
+          }
         } else {
           const result = await transcribeVideo(episode!.video_url);
           if (!cancelled) setSentences(result.sentences);
@@ -79,6 +91,10 @@ export function LearningPage() {
   );
   const currentSentence: Sentence | null =
     currentSentenceIndex >= 0 ? sentences[currentSentenceIndex] : null;
+
+  const pmPhraseCount = useMemo(() => {
+    return sentences.filter((s) => (s.transferability ?? 0) >= 0.2).length;
+  }, [sentences]);
 
   useEffect(() => {
     if (progress.last_position > 0 && playerRef.current && !loading) {
@@ -215,7 +231,7 @@ export function LearningPage() {
   return (
     <div className="min-h-screen bg-[#13131f] flex flex-col">
       <header className="border-b border-white/5 bg-surface/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-[1700px] mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/')}
@@ -241,26 +257,43 @@ export function LearningPage() {
                      episode.transcript_source === 'auto' ? '自动字幕' : 'AI识别'}
                   </span>
                 )}
+                {pmPhraseCount > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary-light flex items-center gap-0.5">
+                    <Briefcase className="w-2.5 h-2.5" />
+                    PM话术 {pmPhraseCount}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-          <button
-            onClick={handleComplete}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              progress.completed
-                ? 'bg-success/20 text-success border border-success/30'
-                : 'bg-surface-light text-text-secondary hover:text-text-primary border border-white/5'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            {progress.completed ? '已完成' : '标记完成'}
-          </button>
+          <div className="flex items-center gap-2">
+            {pmPack && (
+              <button
+                onClick={() => setPmPackOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary-light text-sm font-medium hover:bg-primary/25 transition-all border border-primary/20"
+              >
+                <Briefcase className="w-4 h-4" />
+                PM 表达包
+              </button>
+            )}
+            <button
+              onClick={handleComplete}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                progress.completed
+                  ? 'bg-success/20 text-success border border-success/30'
+                  : 'bg-surface-light text-text-secondary hover:text-text-primary border border-white/5'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {progress.completed ? '已完成' : '标记完成'}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 w-full px-4 py-4 overflow-hidden">
-        <div className="max-w-[1600px] mx-auto h-[calc(100vh-64px)] flex flex-col lg:flex-row gap-4">
-          {/* Left: Video + Controls — sticky on desktop */}
+        <div className="max-w-[1700px] mx-auto h-[calc(100vh-64px)] flex flex-col lg:flex-row gap-4">
+          {/* Left: Video + Controls + Recap */}
           <div className="lg:w-[55%] xl:w-[60%] shrink-0 flex flex-col gap-3 lg:sticky lg:top-0 lg:self-start">
             <div className="rounded-2xl overflow-hidden bg-black shadow-2xl">
               <VideoPlayer
@@ -291,9 +324,14 @@ export function LearningPage() {
               onContinue={handleContinue}
               onABLoop={handleABLoop}
             />
+
+            {/* PM Recap */}
+            {!loading && sentences.length > 0 && (
+              <PMRecap sentences={sentences} episodeTitle={episode.title} />
+            )}
           </div>
 
-          {/* Right: Subtitles — scrollable */}
+          {/* Right: Subtitles */}
           <div className="flex-1 min-w-0 min-h-0 flex flex-col">
             {loading && (
               <div className="bg-surface rounded-2xl border border-white/5 p-12 flex flex-col items-center justify-center gap-4 flex-1">
@@ -302,7 +340,7 @@ export function LearningPage() {
                   <p className="text-text-primary font-medium">正在加载字幕...</p>
                   <p className="text-text-muted text-sm mt-1">
                     {episode.source_type === 'youtube'
-                      ? '正在处理 YouTube 视频字幕'
+                      ? '正在处理 YouTube 视频字幕并生成 PM 表达'
                       : 'Whisper AI 正在分析音频并生成逐句字幕'}
                   </p>
                 </div>
@@ -323,11 +361,26 @@ export function LearningPage() {
                 onSentenceClick={seekToSentence}
                 favoritedWords={progress.favorited_words}
                 onToggleWordFavorite={(word) => toggleWordFavorite(Number(episodeId), word)}
+                onSavePhrase={addCard}
+                isPhraseCardSaved={isCardSaved}
+                episodeId={episode.episode_id}
+                episodeTitle={episode.title}
               />
             )}
           </div>
         </div>
       </main>
+
+      {pmPack && (
+        <PMPackPanel
+          open={pmPackOpen}
+          onClose={() => setPmPackOpen(false)}
+          pack={pmPack}
+          episodeTitle={episode.title}
+          episodeId={episode.episode_id}
+          onSavePhrase={addCard}
+        />
+      )}
     </div>
   );
 }

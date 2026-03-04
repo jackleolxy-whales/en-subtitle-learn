@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback, forwardRef } from 'react';
-import type { Sentence, Keyword } from '../types';
-import { Star, Volume2, MessageCircle, Briefcase, Zap, Hash } from 'lucide-react';
+import type { Sentence, Keyword, SavedPhraseCard } from '../types';
+import { Star, Volume2, Briefcase, Hash, Copy, Bookmark, Check, ChevronDown, ChevronUp, Video, MessageSquare, FileText } from 'lucide-react';
 
 interface SubtitlePanelProps {
   sentences: Sentence[];
@@ -8,6 +8,10 @@ interface SubtitlePanelProps {
   onSentenceClick: (sentence: Sentence) => void;
   favoritedWords: string[];
   onToggleWordFavorite: (word: string) => void;
+  onSavePhrase?: (card: Omit<SavedPhraseCard, 'id' | 'saved_at'>) => void;
+  isPhraseCardSaved?: (english: string, type: string, sentenceId: number) => boolean;
+  episodeId?: number;
+  episodeTitle?: string;
 }
 
 export function SubtitlePanel({
@@ -16,6 +20,10 @@ export function SubtitlePanel({
   onSentenceClick,
   favoritedWords,
   onToggleWordFavorite,
+  onSavePhrase,
+  isPhraseCardSaved,
+  episodeId = 0,
+  episodeTitle = '',
 }: SubtitlePanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sentenceRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -54,6 +62,10 @@ export function SubtitlePanel({
             onSentenceClick={onSentenceClick}
             favoritedWords={favoritedWords}
             onToggleWordFavorite={onToggleWordFavorite}
+            onSavePhrase={onSavePhrase}
+            isPhraseCardSaved={isPhraseCardSaved}
+            episodeId={episodeId}
+            episodeTitle={episodeTitle}
           />
         ))}
       </div>
@@ -68,19 +80,22 @@ interface SentenceRowProps {
   onSentenceClick: (sentence: Sentence) => void;
   favoritedWords: string[];
   onToggleWordFavorite: (word: string) => void;
+  onSavePhrase?: (card: Omit<SavedPhraseCard, 'id' | 'saved_at'>) => void;
+  isPhraseCardSaved?: (english: string, type: string, sentenceId: number) => boolean;
+  episodeId: number;
+  episodeTitle: string;
 }
 
 const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
-  ({ sentence, index, isActive, onSentenceClick, favoritedWords, onToggleWordFavorite }, ref) => {
+  ({ sentence, index, isActive, onSentenceClick, favoritedWords, onToggleWordFavorite, onSavePhrase, isPhraseCardSaved, episodeId, episodeTitle }, ref) => {
     const [expandedKeyword, setExpandedKeyword] = useState<string | null>(null);
-    const [showExpressions, setShowExpressions] = useState(false);
+    const [showPMWork, setShowPMWork] = useState(false);
 
     const toggleKeyword = useCallback((word: string) => {
       setExpandedKeyword((prev) => (prev === word ? null : word));
     }, []);
 
-    const hasExpressions =
-      sentence.rewrite_casual || sentence.rewrite_formal || sentence.rewrite_short;
+    const hasPM = sentence.pm_meeting || sentence.pm_slack || sentence.pm_doc;
     const hasMarkers = sentence.discourse_markers && sentence.discourse_markers.length > 0;
     const hasTags = sentence.scenario_tags && sentence.scenario_tags.length > 0;
 
@@ -156,6 +171,11 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
             <span className="text-[10px] text-text-muted font-mono">
               {formatTime(sentence.start_time)}
             </span>
+            {(sentence.transferability ?? 0) >= 0.3 && (
+              <span className="text-[9px] text-primary-light bg-primary/10 px-1 rounded">
+                PM
+              </span>
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -172,6 +192,13 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
 
             {sentence.chinese && (
               <p className="text-xs text-text-muted mt-1 leading-relaxed">{sentence.chinese}</p>
+            )}
+
+            {/* Intent tag */}
+            {sentence.intent_tag && (
+              <span className="inline-block mt-1 px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300 text-[10px] font-medium">
+                {sentence.intent_tag}
+              </span>
             )}
 
             {/* Discourse markers inline */}
@@ -196,44 +223,63 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
               </div>
             )}
 
-            {/* Expression toggle */}
-            {hasExpressions && (
+            {/* PM Work toggle button */}
+            {hasPM && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowExpressions((v) => !v);
+                  setShowPMWork((v) => !v);
                 }}
                 className={`mt-1.5 flex items-center gap-1 text-[11px] font-medium transition-colors ${
-                  showExpressions ? 'text-primary-light' : 'text-text-muted hover:text-text-secondary'
+                  showPMWork ? 'text-primary-light' : 'text-text-muted hover:text-text-secondary'
                 }`}
               >
-                <Zap className="w-3 h-3" />
-                口语化表达
+                <Briefcase className="w-3 h-3" />
+                Work
+                {showPMWork ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
             )}
 
-            {/* Expressions panel */}
-            {showExpressions && hasExpressions && (
-              <div className="mt-2 space-y-1.5 p-2.5 rounded-lg bg-surface-lighter/30 border border-white/5">
-                {sentence.rewrite_casual && (
-                  <ExpressionRow
-                    icon={<MessageCircle className="w-3 h-3 text-green-400" />}
-                    label="更口语"
-                    text={sentence.rewrite_casual}
+            {/* PM Work drawer */}
+            {showPMWork && hasPM && (
+              <div className="mt-2 space-y-2 p-3 rounded-lg bg-surface-lighter/30 border border-white/5">
+                {sentence.pm_meeting && (
+                  <PMExpressionRow
+                    icon={<Video className="w-3 h-3 text-green-400" />}
+                    label="Meeting"
+                    text={sentence.pm_meeting}
+                    type="meeting"
+                    sentence={sentence}
+                    onSave={onSavePhrase}
+                    isSaved={isPhraseCardSaved}
+                    episodeId={episodeId}
+                    episodeTitle={episodeTitle}
                   />
                 )}
-                {sentence.rewrite_formal && (
-                  <ExpressionRow
-                    icon={<Briefcase className="w-3 h-3 text-blue-400" />}
-                    label="更正式"
-                    text={sentence.rewrite_formal}
+                {sentence.pm_slack && (
+                  <PMExpressionRow
+                    icon={<MessageSquare className="w-3 h-3 text-yellow-400" />}
+                    label="Slack"
+                    text={sentence.pm_slack}
+                    type="slack"
+                    sentence={sentence}
+                    onSave={onSavePhrase}
+                    isSaved={isPhraseCardSaved}
+                    episodeId={episodeId}
+                    episodeTitle={episodeTitle}
                   />
                 )}
-                {sentence.rewrite_short && (
-                  <ExpressionRow
-                    icon={<Zap className="w-3 h-3 text-accent" />}
-                    label="更简短"
-                    text={sentence.rewrite_short}
+                {sentence.pm_doc && (
+                  <PMExpressionRow
+                    icon={<FileText className="w-3 h-3 text-blue-400" />}
+                    label="Doc"
+                    text={sentence.pm_doc}
+                    type="doc"
+                    sentence={sentence}
+                    onSave={onSavePhrase}
+                    isSaved={isPhraseCardSaved}
+                    episodeId={episodeId}
+                    episodeTitle={episodeTitle}
                   />
                 )}
               </div>
@@ -282,14 +328,81 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
 
 SentenceRow.displayName = 'SentenceRow';
 
-function ExpressionRow({ icon, label, text }: { icon: React.ReactNode; label: string; text: string }) {
+
+function PMExpressionRow({
+  icon,
+  label,
+  text,
+  type,
+  sentence,
+  onSave,
+  isSaved,
+  episodeId,
+  episodeTitle,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  text: string;
+  type: 'meeting' | 'slack' | 'doc';
+  sentence: Sentence;
+  onSave?: (card: Omit<SavedPhraseCard, 'id' | 'saved_at'>) => void;
+  isSaved?: (english: string, type: string, sentenceId: number) => boolean;
+  episodeId: number;
+  episodeTitle: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const saved = isSaved?.(text, type, sentence.sentence_id) ?? false;
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSave?.({
+      english: text,
+      type,
+      intent: sentence.intent_tag || '',
+      original: sentence.english,
+      episode_id: episodeId,
+      episode_title: episodeTitle,
+      sentence_id: sentence.sentence_id,
+      tags: sentence.scenario_tags || [],
+    });
+  };
+
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2 group/expr">
       <div className="flex items-center gap-1 mt-0.5 shrink-0">
         {icon}
-        <span className="text-[10px] text-text-muted w-8">{label}</span>
+        <span className="text-[10px] text-text-muted w-12 font-medium">{label}</span>
       </div>
-      <p className="text-xs text-text-secondary leading-relaxed">{text}</p>
+      <p className="text-xs text-text-secondary leading-relaxed flex-1">{text}</p>
+      <div className="flex items-center gap-1 opacity-0 group-hover/expr:opacity-100 transition-opacity shrink-0">
+        <button
+          onClick={handleCopy}
+          className="p-1 rounded hover:bg-surface-light transition-colors"
+          title="复制"
+        >
+          {copied ? (
+            <Check className="w-3 h-3 text-success" />
+          ) : (
+            <Copy className="w-3 h-3 text-text-muted hover:text-text-primary" />
+          )}
+        </button>
+        <button
+          onClick={handleSave}
+          className="p-1 rounded hover:bg-surface-light transition-colors"
+          title="保存到话术库"
+        >
+          <Bookmark
+            className={`w-3 h-3 ${saved ? 'text-accent fill-accent' : 'text-text-muted hover:text-accent'}`}
+          />
+        </button>
+      </div>
     </div>
   );
 }

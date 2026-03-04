@@ -1,5 +1,5 @@
-import type { FilterState, AccentFilter, GenderFilter, CategoryFilter } from '../types';
-import { ArrowUpDown, Star, User, Globe, Tag } from 'lucide-react';
+import type { FilterState, AccentFilter, GenderFilter, CategoryFilter, PMScenarioFilter } from '../types';
+import { ArrowUpDown, Star, User, Globe, Tag, Briefcase } from 'lucide-react';
 
 interface FilterBarProps {
   filters: FilterState;
@@ -22,6 +22,21 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       <DifficultyFilter
         value={filters.difficulty}
         onChange={(d) => update({ difficulty: d })}
+      />
+
+      <SelectFilter
+        icon={<Briefcase className="w-3.5 h-3.5" />}
+        value={filters.pmScenario}
+        options={[
+          { value: 'all', label: 'PM 场景' },
+          { value: 'meeting', label: 'Meeting' },
+          { value: 'slack', label: 'Slack/IM' },
+          { value: 'document', label: 'Document' },
+          { value: 'negotiation', label: 'Negotiation' },
+          { value: 'alignment', label: 'Alignment' },
+          { value: 'pushback', label: 'Pushback' },
+        ]}
+        onChange={(v) => update({ pmScenario: v as PMScenarioFilter })}
       />
 
       <SelectFilter

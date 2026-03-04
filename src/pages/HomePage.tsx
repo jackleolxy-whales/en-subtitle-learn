@@ -1,17 +1,30 @@
 import { useState, useMemo } from 'react';
 import { useLearningProgress } from '../store/useStore';
 import { useEpisodes } from '../store/useEpisodes';
+import { usePhraseCards } from '../store/usePhraseCards';
 import type { FilterState } from '../types';
 import { StatsPanel } from '../components/StatsPanel';
 import { FilterBar } from '../components/FilterBar';
 import { EpisodeCard } from '../components/EpisodeCard';
 import { ImportDialog } from '../components/ImportDialog';
-import { Headphones, Youtube } from 'lucide-react';
+import { PhraseLibrary } from '../components/PhraseLibrary';
+import { Headphones, Youtube, Bookmark } from 'lucide-react';
+
+const PM_SCENARIO_MAP: Record<string, string[]> = {
+  meeting: ['提出观点 opinion', '确认共识 confirm', '解释说明 explain'],
+  slack: ['推进行动 action', '确认共识 confirm', '补充信息 addition'],
+  document: ['解释说明 explain', '提出风险 risk'],
+  negotiation: ['争取资源 negotiate', '反对方案 pushback'],
+  alignment: ['对齐认知 alignment', '确认共识 confirm'],
+  pushback: ['反对方案 pushback', '提出风险 risk'],
+};
 
 export function HomePage() {
   const { stats, progressMap } = useLearningProgress();
   const { allEpisodes, addEpisode } = useEpisodes();
+  const { weekStats, cards, removeCard } = usePhraseCards();
   const [importOpen, setImportOpen] = useState(false);
+  const [phraseLibOpen, setPhraseLibOpen] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     sortOrder: 'desc',
@@ -19,6 +32,7 @@ export function HomePage() {
     gender: 'all',
     accent: 'all',
     category: 'all',
+    pmScenario: 'all',
   });
 
   const totalEpisodes = allEpisodes.length;
@@ -39,6 +53,15 @@ export function HomePage() {
     if (filters.category !== 'all') {
       result = result.filter((e) => e.category === filters.category);
     }
+    if (filters.pmScenario !== 'all') {
+      const relevantIntents = PM_SCENARIO_MAP[filters.pmScenario] || [];
+      result = result.filter((e) => {
+        if (!e.sentences) return false;
+        return e.sentences.some(
+          (s) => s.intent_tag && relevantIntents.some((ri) => s.intent_tag!.includes(ri.split(' ')[1])),
+        );
+      });
+    }
 
     result.sort((a, b) => {
       const dateA = new Date(a.publish_date).getTime();
@@ -58,11 +81,23 @@ export function HomePage() {
               <Headphones className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-text-primary tracking-tight">精听学习平台</h1>
-              <p className="text-xs text-text-muted">English Intensive Listening</p>
+              <h1 className="text-lg font-semibold text-text-primary tracking-tight">PM 工作语言训练器</h1>
+              <p className="text-xs text-text-muted">English Work Language Trainer for PMs</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPhraseLibOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface border border-white/10 hover:border-primary/40 text-text-secondary hover:text-text-primary text-sm font-medium transition-all"
+            >
+              <Bookmark className="w-4 h-4" />
+              话术库
+              {cards.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary-light text-[10px] font-semibold">
+                  {cards.length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setImportOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-all shadow-lg shadow-red-600/20 hover:shadow-red-600/30 active:scale-95"
@@ -85,6 +120,7 @@ export function HomePage() {
               completed={completedCount}
               uncompleted={totalEpisodes - completedCount}
               favoriteWords={stats.favoriteWords}
+              savedPhrases={weekStats}
             />
           </aside>
 
@@ -115,6 +151,13 @@ export function HomePage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onImported={addEpisode}
+      />
+
+      <PhraseLibrary
+        open={phraseLibOpen}
+        onClose={() => setPhraseLibOpen(false)}
+        cards={cards}
+        onRemove={removeCard}
       />
     </div>
   );

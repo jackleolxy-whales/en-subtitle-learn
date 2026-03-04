@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Episode, LearningProgress } from '../types';
-import { Clock, BookOpen, Star, Globe, CheckCircle2, Youtube, Subtitles, Cpu } from 'lucide-react';
+import { Clock, BookOpen, Star, Globe, CheckCircle2, Youtube, Subtitles, Cpu, Briefcase } from 'lucide-react';
 
 interface EpisodeCardProps {
   episode: Episode;
@@ -91,6 +91,12 @@ export function EpisodeCard({ episode, progress }: EpisodeCardProps) {
             <BookOpen className="w-3 h-3" />
             {episode.word_count}词 / {episode.sentence_count}句
           </span>
+          {(episode.pm_phrase_count ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-primary-light">
+              <Briefcase className="w-3 h-3" />
+              PM话术 {episode.pm_phrase_count}
+            </span>
+          )}
           <span className="flex items-center gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star

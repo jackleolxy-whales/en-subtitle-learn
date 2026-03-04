@@ -1,27 +1,29 @@
-import { BookOpen, CheckCircle2, Clock, Star } from 'lucide-react';
+import { Briefcase, MessageSquare, Mic, Bookmark } from 'lucide-react';
 
 interface StatsPanelProps {
   total: number;
   completed: number;
   uncompleted: number;
   favoriteWords: number;
+  savedPhrases: number;
 }
 
-export function StatsPanel({ total, completed, uncompleted, favoriteWords }: StatsPanelProps) {
+export function StatsPanel({ total, completed, savedPhrases }: StatsPanelProps) {
   const stats = [
-    { icon: BookOpen, label: '总期数', value: total, color: 'text-primary-light' },
-    { icon: CheckCircle2, label: '已学习', value: completed, color: 'text-success' },
-    { icon: Clock, label: '未学习', value: uncompleted, color: 'text-accent' },
-    { icon: Star, label: '收藏词', value: favoriteWords, color: 'text-highlight' },
+    { icon: Briefcase, label: '本周新增话术卡', value: savedPhrases, color: 'text-primary-light' },
+    { icon: MessageSquare, label: '已精听句子', value: total > 0 ? completed * 25 : 0, color: 'text-success' },
+    { icon: Mic, label: '完成复述', value: 0, color: 'text-accent' },
+    { icon: Bookmark, label: '总话术卡', value: savedPhrases, color: 'text-highlight' },
   ];
 
   return (
     <div className="bg-surface rounded-2xl p-5 border border-white/5 sticky top-24">
-      <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-5">
-        学习统计
+      <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-1">
+        PM 工作语言进度
       </h2>
+      <p className="text-[10px] text-text-muted mb-5">Work Language Progress</p>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -38,7 +40,7 @@ export function StatsPanel({ total, completed, uncompleted, favoriteWords }: Sta
         ))}
       </div>
 
-      {completed > 0 && (
+      {completed > 0 && total > 0 && (
         <div className="mt-5">
           <div className="flex justify-between text-xs text-text-muted mb-2">
             <span>学习进度</span>

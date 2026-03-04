@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from transcribe import transcribe_video, TranscribeResult, _translate_batch, _translate_keywords, _extract_keywords, KeywordInfo
 from youtube import get_video_info, download_subtitles, parse_vtt, download_video, extract_video_id
 from segmenter import segment_for_learning
-from expressions import process_sentence_expressions, extract_discourse_markers
+from expressions import process_sentence_expressions, extract_discourse_markers, generate_pm_pack, score_transferability
 
 app = FastAPI(title="精听学习平台 API")
 
@@ -185,11 +185,13 @@ def youtube_import(req: YouTubeImportRequest):
                 "english": seg.text,
                 "chinese": "",
                 "keywords": [{"word": w, "pos": "", "meaning": "", "phonetic": ""} for w in keywords],
-                "rewrite_casual": "",
-                "rewrite_formal": "",
-                "rewrite_short": "",
+                "pm_meeting": "",
+                "pm_slack": "",
+                "pm_doc": "",
+                "intent_tag": "",
                 "discourse_markers": [],
                 "scenario_tags": [],
+                "transferability": 0.0,
             })
     else:
         # Fall back to Whisper ASR
@@ -200,11 +202,13 @@ def youtube_import(req: YouTubeImportRequest):
             for s in result.sentences:
                 d = s.to_dict()
                 d.update({
-                    "rewrite_casual": "",
-                    "rewrite_formal": "",
-                    "rewrite_short": "",
+                    "pm_meeting": "",
+                    "pm_slack": "",
+                    "pm_doc": "",
+                    "intent_tag": "",
                     "discourse_markers": [],
                     "scenario_tags": [],
+                    "transferability": 0.0,
                 })
                 sentences_data.append(d)
         except Exception as e:
@@ -233,16 +237,22 @@ def youtube_import(req: YouTubeImportRequest):
             for kw in s["keywords"]:
                 kw["meaning"] = kw_trans.get(kw["word"], kw["word"])
 
-    # Step 4: Generate expressions
+    # Step 4: Generate PM expressions
     if req.generate_expressions:
-        print(f"[YouTube] Generating oral expressions...")
+        print(f"[YouTube] Generating PM expressions...")
         for s in sentences_data:
             expr = process_sentence_expressions(s["english"])
-            s["rewrite_casual"] = expr["rewrite_casual"]
-            s["rewrite_formal"] = expr["rewrite_formal"]
-            s["rewrite_short"] = expr["rewrite_short"]
+            s["pm_meeting"] = expr["pm_meeting"]
+            s["pm_slack"] = expr["pm_slack"]
+            s["pm_doc"] = expr["pm_doc"]
+            s["intent_tag"] = expr["intent_tag"]
             s["discourse_markers"] = expr["discourse_markers"]
             s["scenario_tags"] = expr["scenario_tags"]
+            s["transferability"] = expr["transferability"]
+
+    # Step 4b: Generate PM Expression Pack
+    pm_pack = generate_pm_pack(sentences_data) if req.generate_expressions else None
+    pm_phrase_count = pm_pack["total_transferable"] if pm_pack else 0
 
     # Step 5: Build episode
     video_id = info.video_id
@@ -272,11 +282,13 @@ def youtube_import(req: YouTubeImportRequest):
         "difficulty": 3,
         "word_count": total_words,
         "sentence_count": len(sentences_data),
+        "pm_phrase_count": pm_phrase_count,
         "tags": [],
         "category": "YouTube",
         "publish_date": time.strftime("%Y-%m-%d"),
         "transcript_source": transcript_source,
         "sentences": sentences_data,
+        "pm_pack": pm_pack,
     }
 
     # Save to episodes list
