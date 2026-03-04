@@ -293,9 +293,9 @@ export function LearningPage() {
 
       <main className="flex-1 w-full px-4 py-4 overflow-hidden">
         <div className="max-w-[1700px] mx-auto h-[calc(100vh-64px)] flex flex-col lg:flex-row gap-4">
-          {/* Left: Video + Controls + Recap */}
-          <div className="lg:w-[55%] xl:w-[60%] shrink-0 flex flex-col gap-3 lg:sticky lg:top-0 lg:self-start">
-            <div className="rounded-2xl overflow-hidden bg-black shadow-2xl">
+          {/* Left: Video + Controls + Recap — scrollable */}
+          <div className="lg:w-[55%] xl:w-[60%] shrink-0 flex flex-col gap-3 lg:overflow-y-auto lg:max-h-[calc(100vh-64px)] lg:pr-1 custom-scrollbar">
+            <div className="rounded-2xl overflow-hidden bg-black shadow-2xl shrink-0">
               <VideoPlayer
                 ref={playerRef}
                 src={videoSrc}
@@ -308,26 +308,30 @@ export function LearningPage() {
               />
             </div>
 
-            <LearningControls
-              isPlaying={isPlaying}
-              playbackRate={playbackRate}
-              loopMode={loopMode}
-              abLoop={abLoop}
-              abSettingState={abSettingState}
-              onTogglePlay={handleTogglePlay}
-              onPrevSentence={handlePrevSentence}
-              onNextSentence={handleNextSentence}
-              onReplay={handleReplay}
-              onRateChange={handleRateChange}
-              onToggleVideoLoop={handleToggleVideoLoop}
-              onToggleSentenceLoop={handleToggleSentenceLoop}
-              onContinue={handleContinue}
-              onABLoop={handleABLoop}
-            />
+            <div className="shrink-0">
+              <LearningControls
+                isPlaying={isPlaying}
+                playbackRate={playbackRate}
+                loopMode={loopMode}
+                abLoop={abLoop}
+                abSettingState={abSettingState}
+                onTogglePlay={handleTogglePlay}
+                onPrevSentence={handlePrevSentence}
+                onNextSentence={handleNextSentence}
+                onReplay={handleReplay}
+                onRateChange={handleRateChange}
+                onToggleVideoLoop={handleToggleVideoLoop}
+                onToggleSentenceLoop={handleToggleSentenceLoop}
+                onContinue={handleContinue}
+                onABLoop={handleABLoop}
+              />
+            </div>
 
             {/* PM Recap */}
             {!loading && sentences.length > 0 && (
-              <PMRecap sentences={sentences} episodeTitle={episode.title} />
+              <div className="shrink-0">
+                <PMRecap sentences={sentences} episodeTitle={episode.title} />
+              </div>
             )}
           </div>
 
