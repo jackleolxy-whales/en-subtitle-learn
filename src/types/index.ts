@@ -1,6 +1,7 @@
 export interface PMPackPhrase {
   text: string;
   original: string;
+  chinese: string;
   intent: string;
   sentence_id: number;
 }

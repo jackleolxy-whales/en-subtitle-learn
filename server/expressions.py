@@ -328,27 +328,19 @@ def generate_pm_pack(sentences: list[dict]) -> dict:
         m = s.get("pm_meeting", "")
         sl = s.get("pm_slack", "")
         d = s.get("pm_doc", "")
+        chinese = s.get("chinese", "")
+        base = {
+            "original": s.get("english", ""),
+            "chinese": chinese,
+            "intent": s.get("intent_tag", ""),
+            "sentence_id": s.get("sentence_id", 0),
+        }
         if m and len(meeting_phrases) < 10:
-            meeting_phrases.append({
-                "text": m,
-                "original": s.get("english", ""),
-                "intent": s.get("intent_tag", ""),
-                "sentence_id": s.get("sentence_id", 0),
-            })
+            meeting_phrases.append({**base, "text": m})
         if sl and len(slack_phrases) < 10:
-            slack_phrases.append({
-                "text": sl,
-                "original": s.get("english", ""),
-                "intent": s.get("intent_tag", ""),
-                "sentence_id": s.get("sentence_id", 0),
-            })
+            slack_phrases.append({**base, "text": sl})
         if d and len(doc_phrases) < 5:
-            doc_phrases.append({
-                "text": d,
-                "original": s.get("english", ""),
-                "intent": s.get("intent_tag", ""),
-                "sentence_id": s.get("sentence_id", 0),
-            })
+            doc_phrases.append({**base, "text": d})
 
         for dm in s.get("discourse_markers", []):
             connectors.add(dm.get("marker", "") if isinstance(dm, dict) else str(dm))

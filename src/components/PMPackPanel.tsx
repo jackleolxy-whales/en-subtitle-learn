@@ -82,6 +82,7 @@ export function PMPackPanel({ open, onClose, pack, episodeTitle, episodeId, onSa
                 key={i}
                 text={p.text}
                 original={p.original}
+                chinese={p.chinese}
                 intent={p.intent}
                 type={activeTab as 'meeting' | 'slack' | 'doc'}
                 sentenceId={p.sentence_id}
@@ -100,6 +101,7 @@ export function PMPackPanel({ open, onClose, pack, episodeTitle, episodeId, onSa
 function PackPhraseCard({
   text,
   original,
+  chinese,
   intent,
   type,
   sentenceId,
@@ -109,6 +111,7 @@ function PackPhraseCard({
 }: {
   text: string;
   original: string;
+  chinese: string;
   intent: string;
   type: 'meeting' | 'slack' | 'doc';
   sentenceId: number;
@@ -140,16 +143,19 @@ function PackPhraseCard({
   return (
     <div className="rounded-xl bg-surface-light/20 border border-white/5 p-4 group hover:border-primary/20 transition-all">
       <p className="text-sm text-text-primary leading-relaxed">{text}</p>
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-text-muted truncate max-w-[200px]">
-            原: {original}
+      {chinese && (
+        <p className="text-xs text-text-muted mt-1 leading-relaxed">{chinese}</p>
+      )}
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[10px] text-text-muted truncate max-w-[280px]">
+            原文: {original}
           </span>
           {intent && (
-            <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 text-[10px]">{intent}</span>
+            <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 text-[10px] shrink-0">{intent}</span>
           )}
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button onClick={handleCopy} className="p-1 rounded hover:bg-surface-light transition-colors" title="复制">
             {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5 text-text-muted" />}
           </button>
