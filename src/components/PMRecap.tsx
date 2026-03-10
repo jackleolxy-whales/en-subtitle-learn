@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { Sentence } from '../types';
-import { Mic, Square, RotateCcw, ChevronDown, ChevronUp, Eye, EyeOff, ClipboardCopy, Check } from 'lucide-react';
+import type { Sentence, RecapAssessment } from '../types';
+import { assessRecap } from '../api';
+import { Mic, Square, RotateCcw, ChevronDown, ChevronUp, Eye, EyeOff, ClipboardCopy, Check, Loader2, Lightbulb, BarChart3, Brain } from 'lucide-react';
 
 interface PMRecapProps {
   sentences: Sentence[];
@@ -8,7 +9,7 @@ interface PMRecapProps {
 }
 
 type RecapMode = 'meeting' | 'slack';
-type RecapStep = 'prep' | 'recording' | 'review';
+type RecapStep = 'prep' | 'recording' | 'review' | 'analyzing' | 'feedback';
 
 interface OutlineSection {
   label: string;
@@ -113,9 +114,12 @@ export function PMRecap({ sentences, episodeTitle }: PMRecapProps) {
   const [recordingTime, setRecordingTime] = useState(0);
   const [showReference, setShowReference] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [aiAssessment, setAiAssessment] = useState<RecapAssessment | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const audioBlobRef = useRef<Blob | null>(null);
 
   const outline = recapMode === 'meeting'
     ? buildMeetingOutline(sentences, episodeTitle)
@@ -133,6 +137,7 @@ export function PMRecap({ sentences, episodeTitle }: PMRecapProps) {
 
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        audioBlobRef.current = blob;
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
         setStep('review');
@@ -168,7 +173,27 @@ export function PMRecap({ sentences, episodeTitle }: PMRecapProps) {
     setRecordingTime(0);
     setStep('prep');
     setShowReference(false);
+    setAiAssessment(null);
+    setAiError(null);
+    audioBlobRef.current = null;
   }, [audioUrl]);
+
+  const submitForAIFeedback = useCallback(async () => {
+    if (!audioBlobRef.current) return;
+    setStep('analyzing');
+    setAiError(null);
+
+    const referenceText = outline.map((s) => s.reference).join(' ');
+
+    try {
+      const result = await assessRecap(audioBlobRef.current, referenceText);
+      setAiAssessment(result);
+      setStep('feedback');
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'AI 评估失败');
+      setStep('review');
+    }
+  }, [outline]);
 
   const handleCopyReference = useCallback((text: string, idx: number) => {
     navigator.clipboard.writeText(text);
@@ -185,10 +210,10 @@ export function PMRecap({ sentences, episodeTitle }: PMRecapProps) {
   const transferableCount = sentences.filter((s) => (s.transferability ?? 0) >= 0.15).length;
 
   return (
-    <div className="bg-surface rounded-2xl border border-white/5 overflow-hidden">
+    <div className="glass rounded-2xl overflow-hidden hover-lift">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full px-5 py-3 flex items-center justify-between hover:bg-surface-light/30 transition-colors"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/10 transition-colors"
       >
         <div className="flex items-center gap-2">
           <Mic className="w-4 h-4 text-accent" />
@@ -224,16 +249,17 @@ export function PMRecap({ sentences, episodeTitle }: PMRecapProps) {
           </div>
 
           {/* Step indicator */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {[
-              { key: 'prep', label: '1. 阅读提纲' },
-              { key: 'recording', label: '2. 录音复述' },
-              { key: 'review', label: '3. 对照检查' },
+              { key: 'prep', label: '1. 阅读提纲', active: step === 'prep' },
+              { key: 'recording', label: '2. 录音复述', active: step === 'recording' },
+              { key: 'review', label: '3. 对照检查', active: step === 'review' },
+              { key: 'feedback', label: '4. AI 反馈', active: step === 'analyzing' || step === 'feedback' },
             ].map((s, i) => (
               <div key={s.key} className="flex items-center gap-1.5">
                 {i > 0 && <div className="w-4 h-px bg-white/10" />}
                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                  step === s.key
+                  s.active
                     ? 'bg-accent/20 text-accent'
                     : 'text-text-muted'
                 }`}>
@@ -320,6 +346,13 @@ export function PMRecap({ sentences, episodeTitle }: PMRecapProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={submitForAIFeedback}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary/15 text-primary-light text-xs font-medium hover:bg-primary/25 transition-all"
+                  >
+                    <Brain className="w-3.5 h-3.5" />
+                    AI 评估
+                  </button>
+                  <button
                     onClick={resetAll}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-light/50 text-text-secondary hover:text-text-primary text-xs font-medium transition-all"
                   >
@@ -334,9 +367,108 @@ export function PMRecap({ sentences, episodeTitle }: PMRecapProps) {
                     {showReference ? '隐藏参考' : '对照参考'}
                   </button>
                 </div>
+                {aiError && (
+                  <p className="text-xs text-danger">{aiError}</p>
+                )}
                 <p className="text-[10px] text-text-muted leading-relaxed">
-                  回放你的录音，对照上方参考内容检查：结构是否完整？关键信息是否覆盖？表达是否自然？
+                  回放你的录音，对照上方参考内容检查。点击 "AI 评估" 获取智能反馈。
                 </p>
+              </div>
+            )}
+
+            {/* Analyzing step */}
+            {step === 'analyzing' && (
+              <div className="flex items-center gap-3 text-accent">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">AI 正在分析你的复述...</span>
+              </div>
+            )}
+
+            {/* AI Feedback step */}
+            {step === 'feedback' && aiAssessment && (
+              <div className="w-full space-y-3">
+                {audioUrl && (
+                  <div className="flex items-center gap-3">
+                    <audio controls src={audioUrl} className="flex-1 h-8 rounded-lg" />
+                    <span className="text-[10px] text-text-muted font-mono shrink-0">
+                      {aiAssessment.speech_duration.toFixed(1)}s
+                    </span>
+                  </div>
+                )}
+
+                {/* Scores */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={`rounded-xl p-3 text-center border ${
+                    aiAssessment.clarity_score >= 80
+                      ? 'bg-success/10 border-success/20'
+                      : aiAssessment.clarity_score >= 60
+                        ? 'bg-accent/10 border-accent/20'
+                        : 'bg-danger/10 border-danger/20'
+                  }`}>
+                    <div className={`flex items-center justify-center gap-1.5 mb-1 ${
+                      aiAssessment.clarity_score >= 80 ? 'text-success' : aiAssessment.clarity_score >= 60 ? 'text-accent' : 'text-danger'
+                    }`}>
+                      <BarChart3 className="w-4 h-4" />
+                      <span className="text-2xl font-bold tabular-nums">{aiAssessment.clarity_score}</span>
+                    </div>
+                    <p className="text-[10px] text-text-muted">清晰度 Clarity</p>
+                  </div>
+                  <div className={`rounded-xl p-3 text-center border ${
+                    aiAssessment.coverage_score >= 80
+                      ? 'bg-success/10 border-success/20'
+                      : aiAssessment.coverage_score >= 60
+                        ? 'bg-accent/10 border-accent/20'
+                        : 'bg-danger/10 border-danger/20'
+                  }`}>
+                    <div className={`flex items-center justify-center gap-1.5 mb-1 ${
+                      aiAssessment.coverage_score >= 80 ? 'text-success' : aiAssessment.coverage_score >= 60 ? 'text-accent' : 'text-danger'
+                    }`}>
+                      <Brain className="w-4 h-4" />
+                      <span className="text-2xl font-bold tabular-nums">{aiAssessment.coverage_score}</span>
+                    </div>
+                    <p className="text-[10px] text-text-muted">覆盖度 Coverage</p>
+                  </div>
+                </div>
+
+                {/* Recognized text */}
+                {aiAssessment.recognized_text && (
+                  <div className="rounded-lg bg-surface-light/20 border border-white/5 p-3">
+                    <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-1">You said</p>
+                    <p className="text-xs text-text-secondary leading-relaxed italic">
+                      "{aiAssessment.recognized_text}"
+                    </p>
+                  </div>
+                )}
+
+                {/* AI Feedback */}
+                {aiAssessment.feedback.length > 0 && (
+                  <div className="rounded-lg bg-primary/5 border border-primary/15 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lightbulb className="w-3.5 h-3.5 text-primary-light" />
+                      <span className="text-[10px] font-medium text-primary-light uppercase tracking-wider">
+                        AI Advice
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {aiAssessment.feedback.map((tip, i) => (
+                        <li key={i} className="text-xs text-text-secondary leading-relaxed flex items-start gap-2">
+                          <span className="text-primary-light mt-0.5 shrink-0">•</span>
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={resetAll}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-light/50 text-text-secondary hover:text-text-primary text-xs font-medium transition-all"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    重新录制
+                  </button>
+                </div>
               </div>
             )}
           </div>

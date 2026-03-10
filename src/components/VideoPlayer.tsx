@@ -14,12 +14,13 @@ interface VideoPlayerProps {
   onEnded: () => void;
   onPlay: () => void;
   onPause: () => void;
+  onError?: () => void;
   subtitleEn?: string;
   subtitleZh?: string;
 }
 
 export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
-  ({ src, onTimeUpdate, onEnded, onPlay, onPause, subtitleEn, subtitleZh }, ref) => {
+  ({ src, onTimeUpdate, onEnded, onPlay, onPause, onError, subtitleEn, subtitleZh }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const animFrameRef = useRef<number>(0);
 
@@ -78,11 +79,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
           onEnded={onEnded}
           onPlay={onPlay}
           onPause={onPause}
+          onError={onError}
           playsInline
+          controls
         />
 
         {hasSubtitle && (
-          <div className="absolute bottom-0 left-0 right-0 pointer-events-none px-4 pb-4">
+          <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none px-4 pb-4">
             <div className="max-w-[90%] mx-auto text-center">
               {subtitleEn && (
                 <p

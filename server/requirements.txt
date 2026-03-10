@@ -4,3 +4,4 @@ faster-whisper
 deep-translator
 nltk
 yt-dlp
+python-multipart

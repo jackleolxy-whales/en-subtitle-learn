@@ -53,8 +53,8 @@ export function LearningControls({
   };
 
   return (
-    <div className="bg-surface rounded-2xl border border-white/5 px-4 py-3">
-      <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+    <div className="px-2 py-3">
+      <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
         <ControlButton
           icon={<Repeat className="w-4 h-4" />}
           label="视频循环"
@@ -93,9 +93,9 @@ export function LearningControls({
 
         <button
           onClick={onTogglePlay}
-          className="w-12 h-12 rounded-full bg-primary hover:bg-primary-dark flex items-center justify-center text-white transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 active:scale-95"
+          className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent hover:from-primary-dark hover:to-accent-light flex items-center justify-center text-white transition-all shadow-xl shadow-primary/30 hover:shadow-primary/50 active:scale-95 btn-glow hover-lift"
         >
-          {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+          {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
         </button>
 
         <ControlButton
@@ -148,16 +148,16 @@ function ControlButton({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl transition-all text-xs active:scale-95 ${
+      className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all text-xs active:scale-95 hover-lift ${
         highlight
-          ? 'bg-accent/20 text-accent hover:bg-accent/30'
+          ? 'bg-gradient-to-r from-accent/20 to-orange-400/20 text-accent-light hover:from-accent/30 hover:to-orange-400/30 border border-accent/30'
           : active
-            ? 'bg-primary/20 text-primary-light hover:bg-primary/30'
-            : 'text-text-secondary hover:text-text-primary hover:bg-surface-light'
+            ? 'bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary-light hover:from-primary/30 hover:to-purple-500/30 border border-primary/30'
+            : 'glass-light text-text-secondary hover:text-text-primary hover:bg-white/10'
       }`}
     >
-      {icon}
-      <span className="whitespace-nowrap">{label}</span>
+      {icon && <div className="w-5 h-5 flex items-center justify-center">{icon}</div>}
+      <span className="whitespace-nowrap font-medium">{label}</span>
     </button>
   );
 }

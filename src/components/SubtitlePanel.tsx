@@ -40,16 +40,16 @@ export function SubtitlePanel({
   return (
     <div
       ref={containerRef}
-      className="bg-surface rounded-2xl border border-white/5 overflow-hidden flex-1 min-h-0 flex flex-col"
+      className="glass rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col"
     >
-      <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
-        <h3 className="text-sm font-semibold text-text-secondary">逐句字幕</h3>
-        <span className="text-xs text-text-muted">
+      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between shrink-0">
+        <h3 className="text-sm font-semibold font-display text-text-secondary">逐句字幕</h3>
+        <span className="text-xs text-text-muted px-2 py-1 rounded-lg glass-light">
           {currentSentenceIndex >= 0 ? currentSentenceIndex + 1 : '-'} / {sentences.length}
         </span>
       </div>
 
-      <div className="overflow-y-auto flex-1 min-h-0 p-3 space-y-1">
+      <div className="overflow-y-auto flex-1 min-h-0 p-4 space-y-2">
         {sentences.map((sentence, index) => (
           <SentenceRow
             key={sentence.sentence_id}
@@ -135,7 +135,7 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
               e.stopPropagation();
               toggleKeyword(kw.word);
             }}
-            className="relative inline-block px-0.5 mx-0.5 rounded bg-highlight/20 text-highlight font-medium hover:bg-highlight/30 transition-colors cursor-pointer"
+            className="relative inline-block px-1 mx-0.5 rounded-lg bg-gradient-to-r from-accent/20 to-orange-400/20 text-accent-light font-medium hover:from-accent/30 hover:to-orange-400/30 transition-all cursor-pointer border border-accent/20 hover:border-accent/40"
           >
             {originalWord}
           </button>,
@@ -157,10 +157,10 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
       <div
         ref={ref}
         onClick={() => onSentenceClick(sentence)}
-        className={`group rounded-xl px-4 py-3 cursor-pointer transition-all duration-200 ${
+        className={`group rounded-xl px-4 py-3 cursor-pointer transition-all duration-300 ${
           isActive
-            ? 'bg-primary/15 border border-primary/30 shadow-sm shadow-primary/10'
-            : 'hover:bg-surface-light/50 border border-transparent'
+            ? 'bg-gradient-to-r from-primary/20 to-purple-500/10 border border-primary/30 shadow-md shadow-primary/10 hover-lift'
+            : 'glass-light hover:bg-white/10 border border-transparent hover:border-white/10'
         }`}
       >
         <div className="flex items-start gap-3">
@@ -181,11 +181,11 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
           <div className="flex-1 min-w-0">
             <p
               className={`text-sm leading-relaxed ${
-                isActive ? 'text-text-primary font-medium' : 'text-text-primary/80'
+                isActive ? 'text-text-primary font-semibold' : 'text-text-primary/80'
               }`}
             >
               {isActive && (
-                <Volume2 className="w-3.5 h-3.5 inline-block mr-1.5 text-primary-light animate-pulse" />
+                <Volume2 className="w-3.5 h-3.5 inline-block mr-1.5 text-primary-light animate-pulse-subtle" />
               )}
               {renderEnglishWithKeywords(sentence.english, sentence.keywords)}
             </p>
@@ -242,11 +242,11 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
 
             {/* PM Work drawer */}
             {showPMWork && hasPM && (
-              <div className="mt-2 space-y-2 p-3 rounded-lg bg-surface-lighter/30 border border-white/5">
+              <div className="mt-3 space-y-3 p-4 rounded-xl glass-light border border-white/10">
                 {sentence.pm_meeting && (
                   <PMExpressionRow
-                    icon={<Video className="w-3 h-3 text-green-400" />}
-                    label="Meeting"
+                    icon={<Video className="w-3.5 h-3.5 text-green-400" />}
+                    label="会议"
                     text={sentence.pm_meeting}
                     type="meeting"
                     sentence={sentence}
@@ -258,8 +258,8 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
                 )}
                 {sentence.pm_slack && (
                   <PMExpressionRow
-                    icon={<MessageSquare className="w-3 h-3 text-yellow-400" />}
-                    label="Slack"
+                    icon={<MessageSquare className="w-3.5 h-3.5 text-yellow-400" />}
+                    label="沟通"
                     text={sentence.pm_slack}
                     type="slack"
                     sentence={sentence}
@@ -271,8 +271,8 @@ const SentenceRow = forwardRef<HTMLDivElement, SentenceRowProps>(
                 )}
                 {sentence.pm_doc && (
                   <PMExpressionRow
-                    icon={<FileText className="w-3 h-3 text-blue-400" />}
-                    label="Doc"
+                    icon={<FileText className="w-3.5 h-3.5 text-blue-400" />}
+                    label="文档"
                     text={sentence.pm_doc}
                     type="doc"
                     sentence={sentence}

@@ -109,14 +109,14 @@ export function ImportDialog({ open, onClose, onImported }: ImportDialogProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative bg-surface border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={handleClose} />
+      <div className="relative glass rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-black/5">
           <div className="flex items-center gap-2">
             <Youtube className="w-5 h-5 text-red-500" />
-            <h2 className="font-semibold text-text-primary">导入 YouTube 视频</h2>
+            <h2 className="font-semibold font-display text-text-primary">导入 YouTube 视频</h2>
           </div>
-          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-surface-light transition-colors text-text-muted">
+          <button onClick={handleClose} className="p-2.5 rounded-xl glass-light transition-colors text-text-muted hover:text-text-primary">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -127,18 +127,18 @@ export function ImportDialog({ open, onClose, onImported }: ImportDialogProps) {
             <div className="space-y-4">
               <div>
                 <label className="text-xs text-text-muted block mb-1.5">YouTube 视频链接</label>
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleFetchInfo()}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full px-4 py-3 rounded-xl bg-surface-light border border-white/10 text-text-primary placeholder:text-text-muted/50 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all text-sm"
-                  autoFocus
-                />
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleFetchInfo()}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full px-4 py-3 rounded-xl glass-light border border-black/10 text-text-primary placeholder:text-text-muted/50 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all text-sm"
+                autoFocus
+              />
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-light/50">
+              <div className="flex items-center justify-between p-4 rounded-xl glass-light">
                 <div className="flex items-center gap-2">
                   <Languages className="w-4 h-4 text-primary-light" />
                   <span className="text-sm text-text-secondary">生成中文翻译</span>
@@ -146,7 +146,7 @@ export function ImportDialog({ open, onClose, onImported }: ImportDialogProps) {
                 <ToggleSwitch checked={genTranslation} onChange={setGenTranslation} />
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-light/50">
+              <div className="flex items-center justify-between p-4 rounded-xl glass-light">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-accent" />
                   <span className="text-sm text-text-secondary">生成工作口语包</span>
@@ -157,7 +157,7 @@ export function ImportDialog({ open, onClose, onImported }: ImportDialogProps) {
               <button
                 onClick={handleFetchInfo}
                 disabled={!url.trim()}
-                className="w-full py-3 rounded-xl bg-primary hover:bg-primary-dark text-white font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/20 hover:shadow-primary/30 btn-glow hover-lift"
               >
                 识别视频
               </button>
@@ -332,13 +332,17 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`w-10 h-5.5 rounded-full p-0.5 transition-colors ${
-        checked ? 'bg-primary' : 'bg-surface-lighter'
+      className={`w-12 h-6 rounded-full p-0.5 transition-all duration-300 relative ${
+        checked 
+          ? 'bg-primary shadow-sm shadow-primary/20' 
+          : 'bg-black/10'
       }`}
     >
-      <div className={`w-4.5 h-4.5 rounded-full bg-white shadow transition-transform ${
-        checked ? 'translate-x-4.5' : 'translate-x-0'
-      }`} />
+      <div 
+        className={`w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-out ${
+          checked ? 'translate-x-6' : 'translate-x-0'
+        }`} 
+      />
     </button>
   );
 }

@@ -108,6 +108,57 @@ export interface YouTubeVideoInfo {
   subtitle_hint: 'official' | 'auto' | 'none';
 }
 
+// --- Daily 10 PM Sentences ---
+
+export type PMDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface PMSentence {
+  id: number;
+  english: string;
+  chinese: string;
+  category: string;
+  variation: string;
+  audio_url: string;
+  difficulty: PMDifficulty;
+}
+
+export interface DailySentenceRecord {
+  user_id: string;
+  sentence_id: number;
+  date: string;
+  shadowing_score: number;
+  completed: boolean;
+}
+
+// --- AI Shadowing Coach Types ---
+
+export interface WordError {
+  position: number;
+  original_word: string;
+  spoken_word: string;
+  error_type: 'substitution' | 'deletion' | 'insertion';
+}
+
+export interface SpeechAssessment {
+  recognized_text: string;
+  pronunciation_score: number;
+  fluency_score: number;
+  rhythm_score: number;
+  errors: WordError[];
+  feedback: string[];
+  word_count_original: number;
+  word_count_spoken: number;
+  speech_duration: number;
+}
+
+export interface RecapAssessment {
+  recognized_text: string;
+  clarity_score: number;
+  coverage_score: number;
+  feedback: string[];
+  speech_duration: number;
+}
+
 export type SortOrder = 'asc' | 'desc';
 export type AccentFilter = 'all' | 'American' | 'British';
 export type GenderFilter = 'all' | 'male' | 'female';

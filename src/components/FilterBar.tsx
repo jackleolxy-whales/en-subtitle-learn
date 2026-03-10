@@ -13,9 +13,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
     <div className="flex flex-wrap items-center gap-3">
       <button
         onClick={() => update({ sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc' })}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-white/5 text-sm text-text-secondary hover:text-text-primary hover:border-primary/30 transition-all"
+        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass-light text-sm text-text-secondary hover:text-text-primary transition-all hover-lift"
       >
-        <ArrowUpDown className="w-3.5 h-3.5" />
+        <ArrowUpDown className="w-4 h-4" />
         {filters.sortOrder === 'desc' ? '最新优先' : '最早优先'}
       </button>
 
@@ -25,22 +25,22 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       />
 
       <SelectFilter
-        icon={<Briefcase className="w-3.5 h-3.5" />}
+        icon={<Briefcase className="w-4 h-4" />}
         value={filters.pmScenario}
         options={[
           { value: 'all', label: 'PM 场景' },
-          { value: 'meeting', label: 'Meeting' },
-          { value: 'slack', label: 'Slack/IM' },
-          { value: 'document', label: 'Document' },
-          { value: 'negotiation', label: 'Negotiation' },
-          { value: 'alignment', label: 'Alignment' },
-          { value: 'pushback', label: 'Pushback' },
+          { value: 'meeting', label: '会议' },
+          { value: 'slack', label: '沟通' },
+          { value: 'document', label: '文档' },
+          { value: 'negotiation', label: '谈判' },
+          { value: 'alignment', label: '对齐' },
+          { value: 'pushback', label: '异议' },
         ]}
         onChange={(v) => update({ pmScenario: v as PMScenarioFilter })}
       />
 
       <SelectFilter
-        icon={<User className="w-3.5 h-3.5" />}
+        icon={<User className="w-4 h-4" />}
         value={filters.gender}
         options={[
           { value: 'all', label: '全部' },
@@ -51,7 +51,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       />
 
       <SelectFilter
-        icon={<Globe className="w-3.5 h-3.5" />}
+        icon={<Globe className="w-4 h-4" />}
         value={filters.accent}
         options={[
           { value: 'all', label: '全部口音' },
@@ -62,7 +62,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       />
 
       <SelectFilter
-        icon={<Tag className="w-3.5 h-3.5" />}
+        icon={<Tag className="w-4 h-4" />}
         value={filters.category}
         options={[
           { value: 'all', label: '全部分类' },
@@ -86,19 +86,19 @@ function DifficultyFilter({
   onChange: (v: number | null) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 px-3 py-2 rounded-lg bg-surface border border-white/5">
-      <Star className="w-3.5 h-3.5 text-text-secondary" />
+    <div className="flex items-center gap-1 px-4 py-2.5 rounded-xl glass-light transition-all hover-lift">
+      <Star className="w-4 h-4 text-text-secondary" />
       {[1, 2, 3, 4, 5].map((level) => (
         <button
           key={level}
           onClick={() => onChange(value === level ? null : level)}
-          className="p-0.5"
+          className="p-0.5 transition-transform hover:scale-110"
         >
           <Star
-            className={`w-4 h-4 transition-colors ${
+            className={`w-4 h-4 transition-all ${
               value !== null && level <= value
-                ? 'text-accent fill-accent'
-                : 'text-text-muted hover:text-accent/50'
+                ? 'text-accent fill-accent drop-shadow-sm'
+                : 'text-text-muted hover:text-accent/70'
             }`}
           />
         </button>
@@ -119,12 +119,12 @@ function SelectFilter({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-white/5">
-      <span className="text-text-secondary">{icon}</span>
+    <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass-light transition-all hover-lift group">
+      <span className="text-text-secondary group-hover:text-text-primary transition-colors">{icon}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-transparent text-sm text-text-secondary outline-none cursor-pointer appearance-none pr-2"
+        className="bg-transparent text-sm text-text-secondary group-hover:text-text-primary outline-none cursor-pointer appearance-none pr-4 transition-colors"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value} className="bg-surface text-text-primary">

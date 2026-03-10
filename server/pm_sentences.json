@@ -1,0 +1,183 @@
+[
+  {
+    "id": 1,
+    "english": "We should clarify the requirements before moving forward.",
+    "chinese": "在推进之前，我们需要先明确需求。",
+    "category": "meeting",
+    "variation": "Let's make sure the requirements are clear first.",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2,
+    "english": "Can we align on the scope for this iteration?",
+    "chinese": "我们可以先对这次迭代的范围达成一致吗？",
+    "category": "alignment",
+    "variation": "Let's align on what is in and out of scope.",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3,
+    "english": "What is the user problem we are really trying to solve here?",
+    "chinese": "这里我们真正要解决的用户问题是什么？",
+    "category": "meeting",
+    "variation": "Can we restate the core user problem?",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 4,
+    "english": "Let's validate this assumption with a quick experiment before committing fully.",
+    "chinese": "在完全投入之前，我们先用一个小实验验证一下这个假设。",
+    "category": "planning",
+    "variation": "I'd like to test this assumption with a lightweight experiment first.",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 5,
+    "english": "This feels like a solution; can we go back to the problem statement?",
+    "chinese": "这个听起来更像是一个解决方案，我们能回到问题本身吗？",
+    "category": "meeting",
+    "variation": "It sounds solution-driven — can we reframe it from the problem side?",
+    "audio_url": "",
+    "difficulty": "hard"
+  },
+  {
+    "id": 6,
+    "english": "What trade-offs are we making if we choose this direction?",
+    "chinese": "如果选择这个方向，我们在做哪些取舍？",
+    "category": "risk",
+    "variation": "Can we call out the main trade-offs of this approach?",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 7,
+    "english": "Given our current constraints, what is the smallest valuable version we can ship?",
+    "chinese": "在当前约束下，我们能交付的最小可用版本是什么？",
+    "category": "planning",
+    "variation": "What's the smallest slice that still delivers real value?",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 8,
+    "english": "Can we de-risk this by rolling out to a small segment first?",
+    "chinese": "我们能先对一小部分用户试点，来降低风险吗？",
+    "category": "risk",
+    "variation": "Let's start with a small rollout to reduce risk.",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 9,
+    "english": "What does success look like for this launch from your perspective?",
+    "chinese": "从你的角度看，这次上线成功的标志是什么？",
+    "category": "alignment",
+    "variation": "How would you define success for this release?",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 10,
+    "english": "Let's prioritize impact over perfection for this release.",
+    "chinese": "这次上线我们更优先考虑影响力，而不是完美无缺。",
+    "category": "delivery",
+    "variation": "For this release, let's optimize for impact rather than polish.",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 11,
+    "english": "We need to communicate this change clearly to our stakeholders.",
+    "chinese": "我们需要向各方干系人清晰地传达这次变更。",
+    "category": "delivery",
+    "variation": "Let's make sure stakeholders understand what is changing and why.",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 12,
+    "english": "Is this a must-have for launch, or can it go into a later iteration?",
+    "chinese": "这是首发必须有的功能，还是可以放到后续迭代？",
+    "category": "planning",
+    "variation": "Can this be deferred to a follow-up release?",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 13,
+    "english": "What are the key risks that could block this timeline?",
+    "chinese": "有哪些关键风险可能会阻碍这个时间计划？",
+    "category": "risk",
+    "variation": "Can we list the top risks to this schedule?",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 14,
+    "english": "Let's make sure engineering has enough context before we lock the plan.",
+    "chinese": "在锁定方案之前，我们要确保工程团队有足够的背景信息。",
+    "category": "alignment",
+    "variation": "I want to confirm engineering has full context before we finalize.",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 15,
+    "english": "I hear your concern; can we look at the data together?",
+    "chinese": "我理解你的担心，我们一起看下数据好吗？",
+    "category": "meeting",
+    "variation": "Thanks for raising that — let's review the data side by side.",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 16,
+    "english": "From a user perspective, what problem does this actually solve?",
+    "chinese": "从用户的角度来看，这个方案实际解决了什么问题？",
+    "category": "meeting",
+    "variation": "User-wise, which pain point are we addressing here?",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 17,
+    "english": "Could we do a quick sanity check with a few customers before we commit?",
+    "chinese": "在完全拍板之前，我们能不能先和几个客户做个快速验证？",
+    "category": "risk",
+    "variation": "I'd like to validate this with a couple of customers first.",
+    "audio_url": "",
+    "difficulty": "medium"
+  },
+  {
+    "id": 18,
+    "english": "This sounds like a nice-to-have; what happens if we don’t ship it now?",
+    "chinese": "这听起来像是一个“锦上添花”的功能，如果现在不做会怎样？",
+    "category": "planning",
+    "variation": "What is the impact if we move this out of the current scope?",
+    "audio_url": "",
+    "difficulty": "hard"
+  },
+  {
+    "id": 19,
+    "english": "Let me rephrase that to make sure we are on the same page.",
+    "chinese": "我换个说法，确认一下我们理解是否一致。",
+    "category": "alignment",
+    "variation": "I'll restate it so we can confirm we're aligned.",
+    "audio_url": "",
+    "difficulty": "easy"
+  },
+  {
+    "id": 20,
+    "english": "Given our capacity, we might need to push this to the next sprint.",
+    "chinese": "考虑到目前的产能，我们可能需要把这个推到下一个 Sprint。",
+    "category": "delivery",
+    "variation": "With our current bandwidth, this likely needs to move to a later sprint.",
+    "audio_url": "",
+    "difficulty": "medium"
+  }
+]
+

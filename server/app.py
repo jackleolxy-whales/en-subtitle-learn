@@ -1,10 +1,11 @@
 import json
 import hashlib
 import time
+import random
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ from transcribe import transcribe_video, TranscribeResult, _translate_batch, _tr
 from youtube import get_video_info, download_subtitles, parse_vtt, download_video, extract_video_id
 from segmenter import segment_for_learning
 from expressions import process_sentence_expressions, extract_discourse_markers, generate_pm_pack, score_transferability
+from speech_assess import assess_speech, assess_recap
 
 app = FastAPI(title="精听学习平台 API")
 
@@ -31,6 +33,8 @@ VIDEO_DIR.mkdir(exist_ok=True)
 SUBS_DIR = BASE_DIR / "subs"
 SUBS_DIR.mkdir(exist_ok=True)
 EPISODES_FILE = BASE_DIR / "episodes.json"
+PM_SENTENCES_FILE = BASE_DIR / "pm_sentences.json"
+DAILY_RECORDS_FILE = BASE_DIR / "daily10_records.json"
 
 
 def _load_episodes() -> list[dict]:
@@ -41,6 +45,23 @@ def _load_episodes() -> list[dict]:
 
 def _save_episodes(episodes: list[dict]):
     EPISODES_FILE.write_text(json.dumps(episodes, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _load_pm_sentences() -> list[dict]:
+    if PM_SENTENCES_FILE.exists():
+        return json.loads(PM_SENTENCES_FILE.read_text(encoding="utf-8"))
+    return []
+
+
+def _append_daily_record(record: dict) -> None:
+    records: list[dict] = []
+    if DAILY_RECORDS_FILE.exists():
+        try:
+            records = json.loads(DAILY_RECORDS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            records = []
+    records.append(record)
+    DAILY_RECORDS_FILE.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 CACHE_VERSION = "v3_pm_cn"
@@ -83,6 +104,24 @@ class YouTubeImportRequest(BaseModel):
     generate_translation: bool = True
     generate_expressions: bool = True
     model_size: str = "base"
+
+
+class PMSentenceModel(BaseModel):
+    id: int
+    english: str
+    chinese: str
+    category: str
+    variation: str
+    audio_url: str
+    difficulty: Literal["easy", "medium", "hard"]
+
+
+class DailySentenceRecordModel(BaseModel):
+    user_id: str
+    sentence_id: int
+    date: str
+    shadowing_score: float
+    completed: bool
 
 
 def _migrate_episodes_pm():
@@ -145,6 +184,61 @@ def health():
 def list_episodes():
     """List all imported episodes."""
     return _load_episodes()
+
+
+@app.get("/api/daily10")
+def get_daily10():
+    """
+    返回 Daily 10：每日 10 句 PM 工作英语。
+
+    - 从 pm_sentences.json 中随机抽取
+    - 尽量混合不同 difficulty
+    - 避免重复
+    """
+    all_sents = [_ for _ in _load_pm_sentences()]
+    if not all_sents:
+        raise HTTPException(status_code=500, detail="PM 句子库为空，请先配置 pm_sentences.json")
+
+    # 按难度分桶
+    buckets: dict[str, list[dict]] = {"easy": [], "medium": [], "hard": []}
+    for s in all_sents:
+        diff = s.get("difficulty", "medium")
+        if diff not in buckets:
+            diff = "medium"
+        buckets[diff].append(s)
+
+    target_total = 10
+    target_easy = 4
+    target_medium = 4
+    target_hard = 2
+
+    selected: list[dict] = []
+
+    def pick_from_bucket(bucket: list[dict], n: int):
+        nonlocal selected
+        if not bucket or n <= 0:
+            return
+        if len(bucket) <= n:
+            pool = [s for s in bucket if s not in selected]
+            selected.extend(pool)
+        else:
+            pool = [s for s in bucket if s not in selected]
+            random.shuffle(pool)
+            selected.extend(pool[:n])
+
+    pick_from_bucket(buckets["easy"], target_easy)
+    pick_from_bucket(buckets["medium"], target_medium)
+    pick_from_bucket(buckets["hard"], target_hard)
+
+    if len(selected) < target_total:
+        remaining = [s for s in all_sents if s not in selected]
+        random.shuffle(remaining)
+        selected.extend(remaining[: target_total - len(selected)])
+
+    random.shuffle(selected)
+    selected = selected[:target_total]
+
+    return {"sentences": selected}
 
 
 @app.post("/api/transcribe")
@@ -365,3 +459,66 @@ def serve_video(filename: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail="Video not found")
     return FileResponse(path, media_type="video/mp4")
+
+
+@app.post("/api/speech/assess")
+async def speech_assess(
+    audio: UploadFile = File(...),
+    original_sentence: str = Form(...),
+    model_size: str = Form("base"),
+):
+    """Assess user's shadowing pronunciation against the original sentence."""
+    audio_data = await audio.read()
+    if len(audio_data) < 100:
+        raise HTTPException(status_code=400, detail="Audio file is too small or empty")
+
+    ext = "webm"
+    if audio.content_type:
+        if "wav" in audio.content_type:
+            ext = "wav"
+        elif "mp4" in audio.content_type or "m4a" in audio.content_type:
+            ext = "m4a"
+        elif "ogg" in audio.content_type:
+            ext = "ogg"
+
+    try:
+        result = assess_speech(audio_data, original_sentence, model_size=model_size, audio_format=ext)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech assessment failed: {e}")
+
+    return result.to_dict()
+
+
+@app.post("/api/speech/recap")
+async def speech_recap(
+    audio: UploadFile = File(...),
+    reference_text: str = Form(...),
+    model_size: str = Form("base"),
+):
+    """Assess user's recap recording against reference text (free-form)."""
+    audio_data = await audio.read()
+    if len(audio_data) < 100:
+        raise HTTPException(status_code=400, detail="Audio file is too small or empty")
+
+    ext = "webm"
+    if audio.content_type:
+        if "wav" in audio.content_type:
+            ext = "wav"
+        elif "mp4" in audio.content_type or "m4a" in audio.content_type:
+            ext = "m4a"
+
+    try:
+        result = assess_recap(audio_data, reference_text, model_size=model_size, audio_format=ext)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Recap assessment failed: {e}")
+
+    return result
+
+
+@app.post("/api/daily10/record")
+def save_daily10_record(record: DailySentenceRecordModel):
+    """
+    记录 Daily 10 跟读结果，简单持久化到 JSON 文件。
+    """
+    _append_daily_record(record.dict())
+    return {"status": "ok"}
